@@ -74,14 +74,16 @@ while True:
                 if group_id in group_dict.keys() and data == "Mall":
                     if group_id not in group_to_type_dict.keys():
                         group_to_type_dict[group_id] = "Mall"
-                        bot.send_message("WhereToMeet bot will help you calculate the nearest Mall. Send /join to join!", group_id)
+                        bot.send_message("WhereToMeet bot will help you calculate the nearest Mall. Send /join@WhereToMeetBot to join!", group_id)
+                        bot.bot.editMessageReplyMarkup(message_id=item["callback_query"]["message"]["message_id"], chat_id=group_id)
 
                 if group_id in group_dict.keys() and data == "MRT":
                     if group_id not in group_to_type_dict.keys():
                         group_to_type_dict[group_id] = "MRT"
-                        bot.send_message("WhereToMeet bot will help you calculate the nearest MRT. Send /join to join!", group_id)
+                        bot.send_message("WhereToMeet bot will help you calculate the nearest MRT. Send /join@WhereToMeetBot to join!", group_id)
+                        bot.bot.editMessageReplyMarkup(message_id=item["callback_query"]["message"]["message_id"], chat_id=group_id)
 
-                bot.bot.editMessageReplyMarkup(message_id=item["callback_query"]["message"]["message_id"], chat_id=group_id)
+                
                 continue
 
 
@@ -104,7 +106,7 @@ while True:
                         bot.bot.send_message(text="Where do you want to meet?", chat_id=group_id, reply_markup=reply_markup)
                         group_dict[group_id] = {}
                     else:
-                        bot.send_message("You already started!", group_id)
+                        bot.send_message("A session has already been started!", group_id)
     
                 if message == STOP_CMD:
                     if group_id in group_dict.keys():
@@ -117,11 +119,13 @@ while True:
                                 user_dict.pop(user, None)
                         bot.send_message("WhereToMeet bot has been stopped", group_id)
                     else:
-                        bot.send_message("WhereToMeet bot has not been started. Send /start to start a session.", group_id)
+                        bot.send_message("WhereToMeet bot has not been started. Send /start@WhereToMeetBot to start a session.", group_id)
 
                 # Join messages from a group that has started
-                if group_id in group_dict.keys() and message == JOIN_CMD:
-                    print("join!")
+                if message == JOIN_CMD:
+                    if group_id not in group_dict.keys():
+                        bot.send_message("A session has not yet been started. Send /start@WhereToMeetBot to start a session", group_id)
+                        continue
                     user_id = item["message"]["from"]["id"]
                     user_name = item["message"]["from"]["username"]
                     group_dict[group_id][user_id] = None
@@ -137,7 +141,10 @@ while True:
                     bot.bot.send_message(text="Please send your location", chat_id=user_id, reply_markup=reply_markup)
 
                 # Go
-                if group_id in group_dict.keys() and message == GO_CMD:
+                if message == GO_CMD:
+                    if group_id not in group_dict.keys():
+                        bot.send_message("A session has not yet been started. Send /start@WhereToMeetBot to start a session", group_id)
+                        continue
 
                     if len(group_dict[group_id].keys()) < 1:
                         bot.send_message("No one has joined yet", group_id)
