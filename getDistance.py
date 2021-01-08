@@ -20,27 +20,21 @@ def getDistance(lat1, lon1, lat2, lon2):
     return distance
 
 
-# ownLat, ownLon: Lat and Lon values obtained from Telegram
-# df: BBTLocation(Geocoded).csv
-
-# return a list of addresses of top k closest stores around
-def getTopKClosest(ownLat, ownLon, df, k_closest):
-    output_dict = {}
-    dist_lst = []
-    for index, row in df.iterrows():
-        lat1 = row['lat']
-        lon1 = row['lon']
-        distance = getDistance(lat1, lon1, ownLat, ownLon)
-        dist_lst.append(distance)
-        
-        output_dict[str(distance)] = row['Brand']  + ' that is ' + str("%.2f" % distance) + 'km away, at ' + row['Address']
-    dist_lst.sort()
-    output = []
+# return a list of addresses of top k closest mrt stations around
+def getTopKClosest(location_dict, df, k_closest):
+    station_lst = []
+    output_lst = []
+    for i, row in df.iterrows():
+        lat = float(row[2])
+        lon = float(row[3])
+        dist_lst = []
+        for location in location_dict.values():
+            distance = getDistance(location[0], location[1], lat, lon)
+            dist_lst.append(distance)
+        max_dist = max(dist_lst)
+        tup = (row[0], max_dist)
+        station_lst.append(tup)
+    station_lst.sort(key=lambda tup: tup[1])
     for i in range(k_closest):
-        output.append(output_dict[str(dist_lst[i])])
-    print(output)
-    return output
-
-def getTopBrand(ownLat,ownLon, df, k_closest, brand_name):
-    df = df[df['Brand'] == brand_name]
-    return getTopKClosest(ownLat, ownLon, df, k_closest)
+        output_lst.append(station_lst[i][0])
+    return output_lst
