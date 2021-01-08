@@ -4,7 +4,7 @@ insert description here.
 
 ## Table of Contents
 
-- [JoblessGoWhere](#joblessgowhere)
+- [WheretoMeet](#joblessgowhere)
   - [Table of Contents](#table-of-contents)
   - [Features](#features)
   - [Questions or Feedback](#questions-or-feedback)
