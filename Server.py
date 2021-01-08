@@ -68,7 +68,7 @@ while True:
 
 
             # Get reply if is mall or mrt. Then tell to join
-            if "callback_query" in item.keys() and message_type == "supergroup":
+            if "callback_query" in item.keys() and (message_type == "supergroup" or message_type == "group"):
                 group_id = item["callback_query"]["message"]["chat"]["id"]
                 data = item["callback_query"]["data"]
                 if group_id in group_dict.keys() and data == "Mall":
@@ -94,7 +94,7 @@ while True:
 
 
             # check if from group
-            if message_type == "supergroup":
+            if message_type == "supergroup" or message_type == "group":
                 group_id = item["message"]["chat"]["id"]
                 # check if is "/start"
                 if message == START_CMD:
@@ -138,7 +138,11 @@ while True:
                     location_keyboard = telegram.KeyboardButton(text = "Send my location", request_location=True)
                     custom_keyboard = [[location_keyboard]]
                     reply_markup = telegram.ReplyKeyboardMarkup(keyboard=custom_keyboard, resize_keyboard=True, one_time_keyboard=True)
-                    bot.bot.send_message(text="Please send your location", chat_id=user_id, reply_markup=reply_markup)
+                    # error handle unauthorized
+                    try:
+                        bot.bot.send_message(text="Please send your location", chat_id=user_id, reply_markup=reply_markup)
+                    except telegram.error.Unauthorized:
+                        bot.send_message("@" + user_name + " please say hi to @WhereToMeetBot before joining!", group_id)
 
                 # Go
                 if message == GO_CMD:
@@ -165,7 +169,7 @@ while True:
                         continue
                     
                     if group_id not in group_to_type_dict.keys():
-                        bot.send_message("Please choose either MRT or Mall before calculation", group_id)
+                        bot.send_message("Please choose eiter MRT or Mall before calculation", group_id)
                         continue
 
                     
@@ -227,9 +231,10 @@ while True:
                 # if location message
                 if longi is not None and lati is not None :
                     # Add location to all groups this user belongs to
-                    for group in user_dict[user_id]["groups"]:
-                        print("assigning location")
-                        group_dict[group][user_id] = (lati, longi)
+                    if user_id in user_dict.keys():
+                        for group in user_dict[user_id]["groups"]:
+                            print("assigning location")
+                            group_dict[group][user_id] = (lati, longi)
 
             
             # try:
@@ -241,6 +246,8 @@ while True:
 
             # try:
             #     from_ = item["message"]["from"]["id"]
+
+
             # except:
             #     from_ = item["edited_message"]["from"]["id"]
 
