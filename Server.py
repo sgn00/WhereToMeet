@@ -4,6 +4,11 @@ import csv
 import pandas as pd
 import telegram
 
+START_CMD = "/start@WhereToMeetBot"
+JOIN_CMD = "/join@WhereToMeetBot"
+GO_CMD = "/go@WhereToMeetBot"
+
+
 update_id = None
 
 # initialises the WhereToMeet_bot class
@@ -12,8 +17,13 @@ bot = WhereToMeet_bot("config.cfg")
 # read CSV file
 # bbt_locations = pd.read_csv('BBTgeocodes.csv')
 
-filter_list = []
-filter_dict = {}
+# filter_list = []
+# filter_dict = {}
+
+group_dict = {}
+user_dict = {}
+
+df = pd.read_csv('mrt.csv')
 
 def make_reply(msg):
     if msg is not None:
@@ -29,10 +39,11 @@ while True:
         for item in updates:
             update_id = item["update_id"]
             message = None
-            longi = None
-            lati = None
-            location_list = []
-    
+            # longi = None
+            # lati = None
+            # location_list = []
+            print(item)
+            # get message text
             try:
                 # extract out the text sent to bot
                 message = item["message"]["text"]
@@ -40,25 +51,120 @@ while True:
                 pass
 
             try:
-                # extract out longitude and latitude
-                longi = item["message"]["location"]["longitude"]
-                lati = item["message"]["location"]["latitude"]
+                message_type = item["message"]["chat"]["type"]
             except:
-                pass
+                continue
 
             try:
-                from_ = item["message"]["from"]["id"]
+                test = item["message"]
             except:
-                from_ = item["edited_message"]["from"]["id"]
+                continue
 
-            try: 
-                username = item["message"]["from"]["username"]
-            except:
-                username = "unknown"
+            # check if from group
+            if item["message"]["chat"]["type"] == "supergroup":
+                group_id = item["message"]["chat"]["id"]
+                # check if is "/start"
+                if message == START_CMD:
+                    if group_id not in group_dict.keys():
+                        bot.send_message("WhereToMeet bot will help you calculate the nearest MRT. Send /join to join!", group_id)
+                        group_dict[group_id] = {}
+                    else:
+                        bot.send_message("You already started!", group_id)
+    
 
-            print(message)
-            print(username)
-            bot.send_message("hi sg", 130584658)
+                # Join messages from a group that has started
+                if group_id in group_dict.keys() and message == JOIN_CMD:
+                    print("join!")
+                    user_id = item["message"]["from"]["id"]
+                    user_name = item["message"]["from"]["username"]
+                    group_dict[group_id][user_id] = None
+                    if user_id not in user_dict.keys():
+                        user_dict[user_id] = {}
+                        user_dict[user_id]["name"] = user_name
+                        user_dict[user_id]["groups"] = [group_id]
+                    else:
+                        user_dict[user_id]["groups"].append(group_id)
+                    location_keyboard = telegram.KeyboardButton(text = "Send my location", request_location=True)
+                    custom_keyboard = [[location_keyboard]]
+                    reply_markup = telegram.ReplyKeyboardMarkup(keyboard=custom_keyboard, resize_keyboard=True, one_time_keyboard=True)
+                    bot.bot.send_message(text="Please send your location", chat_id=user_id, reply_markup=reply_markup)
+
+                # Go
+                if group_id in group_dict.keys() and message == GO_CMD:
+                    no_location_users = []
+                    for user, location in group_dict[group_id].items():
+                        if location == None:
+                            no_location_users.append(user)
+                    
+
+                    # if all users have sent then is a go
+                    if not no_location_users:
+                        bot.send_message("Calculating location!!", group_id)
+                        # calculate distance
+                        mrt_locations = getTopKClosest(group_dict[group_id], df, 3)
+                        text_to_send = "Closest 3 locations\n"
+                        for location in mrt_locations:
+                            text_to_send += location + "\n"
+                        text_to_send.rstrip()
+                        bot.send_message(text_to_send, group_id)
+
+                        # clean up user and group
+                        
+                        users = group_dict.pop(group_id, None)
+                        for user in users:
+                            groups = user_dict[user]["groups"]
+                            groups.remove(group_id)
+                            if not groups:
+                                user_dict.pop(user, None)
+                            
+
+                    else:
+                        text_to_send = "These users have not sent their location.\n"
+                        for user in no_location_users:
+                            text_to_send += "@" + user_dict[user]["name"] + "\n"
+                        text_to_send.rstrip()
+                        bot.send_message(text_to_send, group_id)
+
+            # for PMs
+            if item["message"]["chat"]["type"] == "private":
+                user_id = item["message"]["from"]["id"]
+                print("debug1")
+                longi = None
+                lati = None
+                try:
+                # extract out longitude and latitude
+                    longi = item["message"]["location"]["longitude"]
+                    lati = item["message"]["location"]["latitude"]
+                except:
+                    pass
+                # if location message
+                if longi is not None and lati is not None :
+                    # Add location to all groups this user belongs to
+                    for group in user_dict[user_id]["groups"]:
+                        print("assigning location")
+                        group_dict[group][user_id] = (lati, longi)
+
+            
+            # try:
+            #     # extract out longitude and latitude
+            #     longi = item["message"]["location"]["longitude"]
+            #     lati = item["message"]["location"]["latitude"]
+            # except:
+            #     pass
+
+            # try:
+            #     from_ = item["message"]["from"]["id"]
+            # except:
+            #     from_ = item["edited_message"]["from"]["id"]
+
+            # try: 
+            #     username = item["message"]["from"]["username"]
+            # except:
+            #     username = "unknown"
+
+            # print(message)
+            # print(username)
+            # bot.send_message("hi sg", 130584658)
             
             # if from_ in filter_dict.keys() and lati is not None and longi is not None:
             #     brand = filter_dict.pop(from_)
