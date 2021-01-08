@@ -91,39 +91,59 @@ while True:
 
                 # Go
                 if group_id in group_dict.keys() and message == GO_CMD:
-                    no_location_users = []
-                    for user, location in group_dict[group_id].items():
-                        if location == None:
-                            no_location_users.append(user)
-                    
 
-                    # if all users have sent then is a go
-                    if not no_location_users:
-                        bot.send_message("Calculating location!!", group_id)
-                        # calculate distance
-                        mrt_locations = getTopKClosest(group_dict[group_id], df, 3)
-                        text_to_send = "Closest 3 locations\n"
-                        for location in mrt_locations:
-                            text_to_send += location + "\n"
-                        text_to_send.rstrip()
-                        bot.send_message(text_to_send, group_id)
-
-                        # clean up user and group
+                    if len(group_dict[group_id].keys()) >= 1:
+                        no_location_users = []
+                        for user, location in group_dict[group_id].items():
+                            if location == None:
+                                no_location_users.append(user)
                         
-                        users = group_dict.pop(group_id, None)
-                        for user in users:
-                            groups = user_dict[user]["groups"]
-                            groups.remove(group_id)
-                            if not groups:
-                                user_dict.pop(user, None)
-                            
 
+                        # if all users have sent then is a go
+                        if not no_location_users:
+                            bot.send_message("Calculating location!!", group_id)
+                            # calculate distance
+                            #mrt_locations = getTopKClosest(group_dict[group_id], df, 3)
+                            mrt_locations_distance = getTopKClosestDistance(group_dict[group_id], df, 3)
+
+                            text_to_send = "Closest 3 locations\n\n"
+
+                            i = 1
+                            for location, user_id_list in mrt_locations_distance.items():
+                                text_to_send += str(i) + ". " + location + " MRT\n"
+                                for user, distance in user_id_list:
+                                    text_to_send += "@" + user_dict[user]["name"] + " : " + str("%.2fkm" % distance) + "\n"
+
+                                i += 1
+                                text_to_send += "\n"
+
+                            # for location in mrt_locations:
+                            #     text_to_send += location + "\n"
+                            text_to_send.rstrip()
+
+
+
+                            bot.send_message(text_to_send, group_id)
+
+                            # clean up user and group
+                            
+                            users = group_dict.pop(group_id, None)
+                            for user in users:
+                                groups = user_dict[user]["groups"]
+                                groups.remove(group_id)
+                                if not groups:
+                                    user_dict.pop(user, None)
+                                
+
+                        else:
+                            text_to_send = "These users have not sent their location.\n"
+                            for user in no_location_users:
+                                text_to_send += "@" + user_dict[user]["name"] + "\n"
+                            text_to_send.rstrip()
+                            bot.send_message(text_to_send, group_id)
+                    
                     else:
-                        text_to_send = "These users have not sent their location.\n"
-                        for user in no_location_users:
-                            text_to_send += "@" + user_dict[user]["name"] + "\n"
-                        text_to_send.rstrip()
-                        bot.send_message(text_to_send, group_id)
+                        bot.send_message("No one has joined yet", group_id)
 
             # for PMs
             if item["message"]["chat"]["type"] == "private":
