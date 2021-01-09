@@ -17,7 +17,7 @@ WheretoMeet is a telegram bot that allows you to find convenient locations for y
 - `@WhereToMeetBot` can only be used within a telegram group
 
 - Users have to initiate a conversation with the bot first before using `@WhereToMeetBot`
-![filedirectory](img/step4-2.jpg)
+![filedirectory](img/step4.jpg)
 
 
 ## Features
