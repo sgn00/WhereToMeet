@@ -225,6 +225,8 @@ while True:
                             if user_id in user_dict.keys():
                                 for group in user_dict[user_id]["groups"]:
                                     group_dict[group][user_id] = (lati, longi)
+                        else:
+                            bot.send_message("Hello, I'm WhereToMeetBot! Please add me to a group to use me. Only pm me your location when I ask for it!", user_id)
 
                 except Exception as e:
                     print(e)
