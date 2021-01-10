@@ -237,8 +237,8 @@ while True:
                             bot.send_message("Hello, I'm WhereToMeetBot! Please add me to a group to use me. Only pm me your location when I ask for it!", user_id)
 
                 except Exception as e:
-                    print(e)
+                    print(repr(e))
                     continue
 
     except Exception as e:
-        print(e)
+        print(repr(e))
