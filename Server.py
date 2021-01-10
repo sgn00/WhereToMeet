@@ -119,7 +119,15 @@ while True:
                                 bot.send_message("A session has not yet been started. Send /start@WhereToMeetBot to start a session", group_id)
                                 continue
                             user_id = item["message"]["from"]["id"]
-                            user_name = item["message"]["from"]["username"]
+                            user_name = None
+                            # assign username
+                            if "username" in item["message"]["from"].keys():
+                                user_name = item["message"]["from"]["username"]
+                            elif "first_name" in item["message"]["from"].keys():
+                                user_name = item["message"]["from"]["first_name"]
+                            else:
+                                continue
+                            
                             group_dict[group_id][user_id] = None
                             if user_id not in user_dict.keys():
                                 user_dict[user_id] = {}
@@ -134,7 +142,7 @@ while True:
                             try:
                                 bot.bot.send_message(text="Please send your location", chat_id=user_id, reply_markup=reply_markup)
                             except telegram.error.Unauthorized:
-                                bot.send_message("@" + user_name + " please say hi to @WhereToMeetBot before joining!", group_id)
+                                bot.send_message("@" + user_name + " please pm @WhereToMeetBot first before joining!", group_id)
 
                         # Go
                         if message == GO_CMD:
@@ -161,7 +169,7 @@ while True:
                                 continue
                             
                             if group_id not in group_to_type_dict.keys():
-                                bot.send_message("Please choose eiter MRT or Mall before calculation", group_id)
+                                bot.send_message("Please choose either MRT or Mall before calculation", group_id)
                                 continue
 
                             
